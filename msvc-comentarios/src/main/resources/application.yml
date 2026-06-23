@@ -1,0 +1,20 @@
+server:
+  port: 8088 # Puerto exclusivo para comentarios
+
+spring:
+  application:
+    name: MSVC-COMENTARIOS
+  datasource:
+    url: jdbc:mysql://localhost:3306/cine_comentarios_db?createDatabaseIfNotExist=true&serverTimezone=UTC
+    username: root
+    password: # Tu contraseña de MySQL si aplica
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
