@@ -1,0 +1,19 @@
+server:
+  port: 8086 # Puerto exclusivo para sucursales
+
+spring:
+  application:
+    name: MSVC-SUCURSALES
+  datasource:
+    url: jdbc:mysql://localhost:3306/cine_sucursales_db?createDatabaseIfNotExist=true&serverTimezone=UTC
+    username: root
+    password: # Contraseña de tu MySQL si aplica
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
