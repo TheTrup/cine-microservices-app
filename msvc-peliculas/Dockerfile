@@ -6,6 +6,9 @@ WORKDIR /app
 COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
 
+# Forzar permisos de ejecución en el contenedor
+RUN chmod +x mvnw
+
 # Descargar dependencias en caché
 RUN ./mvnw dependency:go-offline
 
