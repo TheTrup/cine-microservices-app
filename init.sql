@@ -1,0 +1,10 @@
+CREATE DATABASE IF NOT EXISTS cine_peliculas_db;
+CREATE DATABASE IF NOT EXISTS cine_salas_db;
+CREATE DATABASE IF NOT EXISTS cine_funciones_db;
+CREATE DATABASE IF NOT EXISTS cine_asientos_db;
+CREATE DATABASE IF NOT EXISTS cine_usuarios_db;
+CREATE DATABASE IF NOT EXISTS cine_sucursales_db;
+CREATE DATABASE IF NOT EXISTS cine_reservas_db;
+CREATE DATABASE IF NOT EXISTS cine_comentarios_db;
+CREATE DATABASE IF NOT EXISTS cine_promociones_db;
+CREATE DATABASE IF NOT EXISTS cine_historial_db;

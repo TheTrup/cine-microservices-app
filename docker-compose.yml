@@ -1,0 +1,270 @@
+version: '3.8'
+
+services:
+  # Servidor de Base de Datos MySQL unificado para el ecosistema distribuido
+  # Servidor de Base de Datos MySQL unificado para el ecosistema distribuido
+  cine-mysql:
+    image: mysql:8.4
+    container_name: cine-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Montamos el archivo local init.sql dentro de la carpeta de inicio automático de MySQL
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cine-network
+
+# Servidor de Descubrimiento (Eureka Server)
+  msvc-eureka:
+    build: ./msvc-eureka
+    container_name: msvc-eureka
+    ports:
+      - "8761:8761"
+    # OBLIGAR A VALIDAR SI EUREKA YA RESPONDE HTTP
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - cine-network
+
+  # API Gateway
+  msvc-gateway:
+    build: ./msvc-gateway
+    container_name: msvc-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      - msvc-eureka
+    networks:
+      - cine-network
+
+  # --- MICROSERVICIOS DE NEGOCIO ---
+
+  msvc-peliculas:
+    build:
+      context: ./msvc-peliculas
+      args:
+        JAR_NAME: msvc-peliculas
+    container_name: msvc-peliculas
+    ports:
+      - "8001:8001"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_peliculas_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-salas:
+    build:
+      context: ./msvc-salas
+      args:
+        JAR_NAME: msvc-salas
+    container_name: msvc-salas
+    ports:
+      - "8002:8002"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_salas_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-funciones:
+    build:
+      context: ./msvc-funciones
+      args:
+        JAR_NAME: msvc-funciones
+    container_name: msvc-funciones
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_funciones_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-asientos:
+    build:
+      context: ./msvc-asientos
+      args:
+        JAR_NAME: msvc-asientos
+    container_name: msvc-asientos
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_asientos_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-usuarios:
+    build:
+      context: ./msvc-usuarios
+      args:
+        JAR_NAME: msvc-usuarios
+    container_name: msvc-usuarios
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_usuarios_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_started
+    networks:
+      - cine-network
+
+  msvc-sucursales:
+    build:
+      context: ./msvc-sucursales
+      args:
+        JAR_NAME: msvc-sucursales
+    container_name: msvc-sucursales
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_sucursales_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-reservas:
+    build:
+      context: ./msvc-reservas
+      args:
+        JAR_NAME: msvc-reservas
+    container_name: msvc-reservas
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_reservas_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-comentarios:
+    build:
+      context: ./msvc-comentarios
+      args:
+        JAR_NAME: msvc-comentarios
+    container_name: msvc-comentarios
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_comentarios_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-promociones:
+    build:
+      context: ./msvc-promociones
+      args:
+        JAR_NAME: msvc-promociones
+    container_name: msvc-promociones
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_promociones_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+  msvc-historial:
+    build:
+      context: ./msvc-historial
+      args:
+        JAR_NAME: msvc-historial
+    container_name: msvc-historial
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://cine-mysql:3306/cine_historial_db?serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://msvc-eureka:8761/eureka/
+    depends_on:
+      cine-mysql:
+        condition: service_healthy
+      msvc-eureka:
+        condition: service_healthy
+    networks:
+      - cine-network
+
+volumes:
+  mysql_data:
+
+networks:
+  cine-network:
+    driver: bridge
