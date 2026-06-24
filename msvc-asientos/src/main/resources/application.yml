@@ -1,0 +1,19 @@
+server:
+  port: 8084 # Puerto exclusivo para asientos
+
+spring:
+  application:
+    name: MSVC-ASIENTOS
+  datasource:
+    url: jdbc:mysql://localhost:3306/cine_asientos_db?createDatabaseIfNotExist=true&serverTimezone=UTC
+    username: root
+    password: # Pon tu contraseña si aplica
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
